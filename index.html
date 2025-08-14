@@ -37,7 +37,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:200%;height:200%;backg
 .option-card{background: rgba(255,255,255,0.95);padding:12px 10px;border-radius:15px;border:1px solid #00aa0033;transition:all 0.3s ease;box-shadow:0 4px 10px rgba(0,0,0,0.08);backdrop-filter: blur(6px);}
 .option-card:hover{border-color:#00aa00;transform:translateY(-2px);}
 .option-card label{display:block;margin-bottom:6px;font-weight:bold;color:#00aa00;font-size:13px;}
-.option-card select,.option-card input,.option-card button{width:100%;padding:10px;border-radius:10px;border:1px solid #ccc;font-size:14px;outline:none;background:#fff;}
+.option-card select,.option-card input[type="text"],.option-card button{width:100%;padding:10px;border-radius:10px;border:1px solid #ccc;font-size:14px;outline:none;background:#fff;}
 .option-card button{background:#00aa00;color:#fff;font-weight:bold;cursor:pointer;margin-top:6px;}
 
 /* Signal Output */
@@ -69,7 +69,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:200%;height:200%;backg
     .header h1{font-size:20px;}
     .header p{font-size:12px;}
     .option-card label{font-size:12px;}
-    .option-card select,.option-card input,.option-card button{font-size:13px;}
+    .option-card select,.option-card input[type="text"],.option-card button{font-size:13px;}
     .signal-output h2{font-size:15px;}
     .signal-card{font-size:13px;}
     .signal-output .buttons button{font-size:13px;padding:8px 0;}
@@ -145,9 +145,9 @@ for(let i=0;i<40;i++){
         </div>
 
         <div class="option-card">
-            <label for="pairSelect">Select Pair</label>
-            <input type="text" id="pairInput" placeholder="Type pair name...">
-            <select id="pairSelect" size="5" style="width:100%; margin-top:5px;"></select>
+            <label for="pairInput">Select Pair</label>
+            <input type="text" id="pairInput" placeholder="Type or leave blank">
+            <select id="pairSelect" size="5"></select>
         </div>
     </div>
 
@@ -161,9 +161,7 @@ for(let i=0;i<40;i++){
     </div>
 </div>
 
-<div id="notice" class="notice">
-<a href="https://t.me/TraderParvej" target="_blank">@TraderParvej</a>
-</div>
+<div id="notice" class="notice"></div>
 
 <script>
 const passwords=['@Ai100','Parvej4067'];
@@ -178,40 +176,18 @@ let waitingForResult = false;
 let profitCount = 0;
 let profitCooldownEnd = null;
 
-// Login
-function checkLogin(){
-    const input=document.getElementById('password').value;
-    if(input==='Parvej4067'){  
-        document.getElementById('loginContainer').style.display='none';
-        document.getElementById('tradingContainer').style.display='flex';
-        return;
-    }
-    const now = Date.now();
-    const lastLogin = localStorage.getItem('lastLoginTime');
-    if(!passwords.includes(input)){
-        alert('Password is incorrect!');
-        return;
-    }
-    if(lastLogin && now - parseInt(lastLogin) < 3*60*60*1000){
-        const notice = document.getElementById('notice');
-        notice.innerHTML=`আপনি একবার লগইন করেছেন। আবার লগইন করতে ৩ ঘন্টা পর চেষ্টা করুন।<br>যোগাযোগ: <a href="https://t.me/TraderParvej" target="_blank">@TraderParvej</a>`;
-        notice.classList.add('show');
-        setTimeout(()=>{ notice.classList.remove('show'); },15000);
-        return;
-    }
-    localStorage.setItem('lastLoginTime', now);
-    document.getElementById('loginContainer').style.display='none';
-    document.getElementById('tradingContainer').style.display='flex';
-}
-
 // Pair filter
 const allPairs = [...realAssets,...otcAssets];
 const pairSelect = document.getElementById('pairSelect');
 const pairInput = document.getElementById('pairInput');
-
 function loadPairs(filter=''){
     pairSelect.innerHTML='';
-    const filtered = allPairs.filter(p=>p.toLowerCase().includes(filter.toLowerCase()));
+    let filtered;
+    if(filter.trim()===''){ 
+        filtered = allPairs; 
+    } else {
+        filtered = allPairs.filter(p=>p.toLowerCase().includes(filter.toLowerCase()));
+    }
     filtered.forEach(asset=>{
         const opt=document.createElement('option');
         opt.value=asset;
@@ -223,30 +199,36 @@ loadPairs();
 pairInput.addEventListener('input', ()=>{ loadPairs(pairInput.value); });
 pairSelect.addEventListener('change', ()=>{ pairInput.value = pairSelect.value; });
 
-// Signal generate
+function checkLogin(){
+    const input=document.getElementById('password').value;
+    if(!passwords.includes(input)){
+        alert('Password is incorrect!');
+        return;
+    }
+    document.getElementById('loginContainer').style.display='none';
+    document.getElementById('tradingContainer').style.display='flex';
+}
+
 function generateSignals(){
-    const now = new Date();
     if(!canGenerate){ alert('Please wait for cooldown or select previous signal result.'); return; }
 
-    if(lossCooldownEnd && now < lossCooldownEnd){
-        showNotice("মার্কেট এখন খারাপ! ৪ ঘন্টা পর আবার ট্রেড করতে পারবেন।");
+    if(lossCooldownEnd && new Date()<lossCooldownEnd){
+        showNotice("২ টি ধারাবাহিক লস হয়েছে! ৪ ঘন্টা পর ট্রেড করতে পারবেন।");
+        return;
+    }
+    if(profitCooldownEnd && new Date()<profitCooldownEnd){
+        showNotice("১০ টি সফল ট্রেড হয়েছে। ১০ ঘন্টা পর ট্রেড করতে পারবেন।");
         return;
     }
 
-    if(profitCooldownEnd && now < profitCooldownEnd){
-        showNotice("১০ টি সফল ট্রেড হয়েছে। ১০ ঘন্টা পর আবার ট্রেড করতে পারবেন।");
-        return;
-    }
+    const marketType = document.getElementById('market').value;
+    let assets = marketType==='real'?realAssets:otcAssets;
 
-    let asset = pairInput.value;
-    if(!asset) {
-        const marketType=document.getElementById('market').value;
-        const assets=marketType==='real'?realAssets:otcAssets;
-        asset=assets[Math.floor(Math.random()*assets.length)];
-    }
-
-    const randomGap = Math.floor(Math.random() * 3) + 1; // 1-3 min
-    signalEndTime = new Date(Date.now() + randomGap*60000);
+    let selectedPair = pairInput.value.trim();
+    if(selectedPair==='') selectedPair = assets[Math.floor(Math.random()*assets.length)];
+    
+    let gapMin = Math.floor(Math.random()*3)+1; // 1-3 min random
+    signalEndTime = new Date(Date.now()+gapMin*60000);
 
     const tzOffset = parseInt(document.getElementById('timezone').value.replace('UTC',''));
     const signalDate = new Date(Date.now() + tzOffset*3600000);
@@ -261,7 +243,7 @@ function generateSignals(){
 আগের ক্যান্ডেল অনুযায়ী বিপরীতে ট্রেড ❤️
 
 ╔════ ≪•◦ ❈ ◦•≫ ════╗
-${hours}:${minutes} – ${asset}
+${hours}:${minutes} – ${selectedPair}
 ╚════ ≪•◦ ❈ ◦•≫ ════╝
 
 <div class="winloss-buttons">
@@ -286,6 +268,7 @@ ${hours}:${minutes} – ${asset}
         else{
             btn.textContent='Generate Signal';
             clearInterval(interval);
+            canGenerate=true;
         }
     },1000);
 }
@@ -294,7 +277,6 @@ function registerWin(button){
     profitCount++;
     consecutiveLosses=0;
     waitingForResult=false;
-    canGenerate=true;
     clearSignalBox();
     if(profitCount>=10){
         profitCooldownEnd = new Date(Date.now()+10*60*60*1000);
@@ -306,7 +288,6 @@ function registerWin(button){
 function registerLoss(button){
     consecutiveLosses++;
     waitingForResult=false;
-    canGenerate=true;
     clearSignalBox();
     if(consecutiveLosses>=2){
         lossCooldownEnd = new Date(Date.now()+4*60*60*1000);
@@ -320,7 +301,6 @@ function clearSignalBox(){
     btn.textContent='Generate Signal';
 }
 
-// Copy signals without buttons
 function copyAllSignals(){
     const list = document.getElementById('signalList');
     let text = '';
@@ -332,7 +312,6 @@ function copyAllSignals(){
     navigator.clipboard.writeText(text).then(()=>alert('Copied to clipboard!'));
 }
 
-// Notice
 function showNotice(msg){
     const notice = document.getElementById('notice');
     notice.innerHTML=msg;
