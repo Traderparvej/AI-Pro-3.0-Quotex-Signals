@@ -221,7 +221,7 @@ function showResult(card,result){
     res.textContent=result==='WIN'?'✅ WIN':'❌ LOSS';
     res.style.color=result==='WIN'?'#007700':'#aa0000';
     card.appendChild(res);
-    card.querySelectorAll('.winloss-buttons button').forEach(b=>b.disabled=true;b.style.opacity='0.6');
+    card.querySelectorAll('.winloss-buttons button').forEach(b=>{b.disabled=true;b.style.opacity='0.6';});
     updateTotalResult(card.querySelector('.signal-title').textContent,result);
 }
 
