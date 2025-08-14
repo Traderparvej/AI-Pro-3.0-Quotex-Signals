@@ -61,6 +61,9 @@ body::before{content:'';position:fixed;top:0;left:0;width:200%;height:200%;backg
 .notice.show{display:block;opacity:1;}
 .notice a{color:#aa0000;text-decoration:underline;font-size:20px;display:block;margin-top:10px;}
 
+/* Bold & Colored Signal Title */
+.signal-title{font-weight:bold;color:#00aa00;font-size:16px;}
+
 @media(max-width:480px){
     #loginContainer{padding:20px 12px;}
     .header h1{font-size:20px;}
@@ -157,37 +160,9 @@ for(let i=0;i<40;i++){
 </div>
 
 <script>
-/* === শুধুমাত্র এই দুই লিস্ট আপডেট করা হয়েছে; বাকি সব কিছু আগের মতোই আছে === */
 const passwords=['@Ai100','Parvej4067'];
-
-const realAssets=[
-  "EUR/USD",
-  "GBP/USD",
-  "USD/JPY",
-  "USD/CHF",
-  "AUD/USD",
-  "USD/CAD",
-  "NZD/USD",
-  "EUR/GBP",
-  "EUR/JPY",
-  "GBP/JPY",
-  "AUD/JPY",
-  "GBP/AUD"
-];
-
-const otcAssets=[
-  "USD/BDT (OTC)",
-  "USD/EGP (OTC)",
-  "USD/PKR (OTC)",
-  "USD/ARS (OTC)",
-  "USD/INR (OTC)",
-  "USD/BRL (OTC)",
-  "NZD/USD (OTC)",
-  "NZD/JPY (OTC)",
-  "USD/MXN (OTC)",
-  "EUR/CAD (OTC)"
-];
-/* === আপডেট শেষ === */
+const realAssets=["EUR/USD","GBP/USD","USD/JPY","USD/CHF","AUD/USD","USD/CAD","NZD/USD","EUR/GBP","EUR/JPY","GBP/JPY","AUD/JPY","GBP/AUD"];
+const otcAssets=["USD/BDT (OTC)","USD/EGP (OTC)","USD/PKR (OTC)","USD/ARS (OTC)","USD/INR (OTC)","USD/BRL (OTC)","NZD/USD (OTC)","NZD/JPY (OTC)","USD/MXN (OTC)","EUR/CAD (OTC)"];
 
 let canGenerate = true;
 let signalEndTime = null;
@@ -201,19 +176,10 @@ function checkLogin(){
     const input=document.getElementById('password').value;
     const now = Date.now();
     const lastLogin = localStorage.getItem('lastLoginTime');
-
-    if(input === 'Parvej4067'){
-        localStorage.setItem('lastLoginTime', now);
-        document.getElementById('loginContainer').style.display='none';
-        document.getElementById('tradingContainer').style.display='flex';
-        return;
-    }
-
     if(!passwords.includes(input)){
         alert('Password is incorrect!');
         return;
     }
-
     if(lastLogin && now - parseInt(lastLogin) < 3*60*60*1000){
         const notice = document.getElementById('notice');
         notice.innerHTML=`আপনি একবার লগইন করেছেন। আবার লগইন করতে ৩ ঘন্টা পর চেষ্টা করুন।<br>যোগাযোগ: <a href="https://t.me/TraderParvej" target="_blank">@TraderParvej</a>`;
@@ -221,7 +187,6 @@ function checkLogin(){
         setTimeout(()=>{ notice.classList.remove('show'); },15000);
         return;
     }
-
     localStorage.setItem('lastLoginTime', now);
     document.getElementById('loginContainer').style.display='none';
     document.getElementById('tradingContainer').style.display='flex';
@@ -229,30 +194,13 @@ function checkLogin(){
 
 function generateSignals(){
     const now = new Date();
-    if(!canGenerate){
-        alert('Please wait for cooldown or select previous signal result.');
-        return;
-    }
-    if(lossCooldownEnd && now < lossCooldownEnd){
-        showNotice("মার্কেট এখন খারাপ! ৪ ঘন্টা পর আবার ট্রেড করতে পারবেন।");
-        return;
-    }
-    if(profitCooldownEnd && now < profitCooldownEnd){
-        showNotice("১০ টি সফল ট্রেড হয়েছে। ১০ ঘন্টা পর আবার ট্রেড করতে পারবেন।");
-        return;
-    }
-
-    canGenerate=false;
-    waitingForResult=true;
-
+    if(!canGenerate){ alert('Please wait for cooldown or select previous signal result.'); return; }
     const marketType=document.getElementById('market').value;
     const assets=marketType==='real'?realAssets:otcAssets;
     let asset=assets[Math.floor(Math.random()*assets.length)];
     if(marketType==='otc' && !asset.includes('(OTC)')) asset+=' (OTC)';
-
     const randomGap = Math.floor(Math.random() * 4) + 2;
     signalEndTime = new Date(Date.now() + randomGap*60000);
-
     const tzOffset = parseInt(document.getElementById('timezone').value.replace('UTC',''));
     const signalDate = new Date(Date.now() + randomGap*60000 + tzOffset*3600000);
     const hours = signalDate.getUTCHours().toString().padStart(2,'0');
@@ -261,7 +209,7 @@ function generateSignals(){
     const card=document.createElement('div');
     card.className='signal-card';
     card.innerHTML=`
-Quotex Real Time Signals – AI Pro 3.0
+<span class="signal-title">Quotex Real Time Signals – AI Pro 3.0</span>
 
 🧠 Opposite Candle Stage:
 আগের ক্যান্ডেল অনুযায়ী বিপরীতে ট্রেড ❤️
@@ -279,9 +227,12 @@ ${hours}:${minutes} – ${asset}
 🚫 Avoid Signals:
 ➤Doji  ➤Market <80%  ➤Gap Up/Down  ➤1-Step MTG
 
-Community Group: https://t.me/QxParvej
+Community Group: <a href="https://t.me/QxParvej" target="_blank">Join Telegram</a>
     `;
     document.getElementById('signalList').prepend(card);
+
+    canGenerate=false;
+    waitingForResult=true;
 
     const interval = setInterval(()=>{
         const remaining = Math.floor((signalEndTime-new Date())/1000);
@@ -294,48 +245,11 @@ Community Group: https://t.me/QxParvej
     },1000);
 }
 
-function registerWin(button){
-    profitCount++;
-    consecutiveLosses=0;
-    waitingForResult=false;
-    clearSignalBox();
-    if(profitCount>=10){
-        profitCooldownEnd = new Date(Date.now()+10*60*60*1000);
-        showNotice("১০ টি সফল ট্রেড হয়েছে। ১০ ঘন্টা পর আবার ট্রেড করতে পারবেন।");
-        profitCount=0;
-    }
-}
-
-function registerLoss(button){
-    consecutiveLosses++;
-    waitingForResult=false;
-    clearSignalBox();
-    if(consecutiveLosses>=2){
-        lossCooldownEnd=new Date(Date.now()+4*60*60*1000);
-        showNotice("মার্কেট এখন খারাপ! ৪ ঘন্টা পর আবার ট্রেড করতে পারবেন।");
-        consecutiveLosses=0;
-    }
-}
-
-function clearSignalBox(){
-    document.getElementById('signalList').innerHTML='';
-    canGenerate=true;
-    document.getElementById('generateBtn').textContent='Generate Signal';
-}
-
-function copyAllSignals(){
-    const list=document.getElementById('signalList');
-    let text='';
-    list.querySelectorAll('.signal-card').forEach(div=>text+=div.textContent+'\n');
-    navigator.clipboard.writeText(text).then(()=>alert('Copied to clipboard!'));
-}
-
-function showNotice(msg){
-    const notice = document.getElementById('notice');
-    notice.innerHTML=msg+`<br>যোগাযোগ: <a href="https://t.me/TraderParvej" target="_blank">@TraderParvej</a>`;
-    notice.classList.add('show');
-    setTimeout(()=>{ notice.classList.remove('show'); },15000);
-}
+function registerWin(button){ profitCount++; consecutiveLosses=0; waitingForResult=false; clearSignalBox(); if(profitCount>=10){ profitCooldownEnd = new Date(Date.now()+10*60*60*1000); showNotice("১০ টি সফল ট্রেড হয়েছে। ১০ ঘন্টা পর আবার ট্রেড করতে পারবেন।"); profitCount=0; } }
+function registerLoss(button){ consecutiveLosses++; waitingForResult=false; clearSignalBox(); if(consecutiveLosses>=2){ lossCooldownEnd=new Date(Date.now()+4*60*60*1000); showNotice("মার্কেট এখন খারাপ! ৪ ঘন্টা পর আবার ট্রেড করতে পারবেন।"); consecutiveLosses=0; } }
+function clearSignalBox(){ document.getElementById('signalList').innerHTML=''; canGenerate=true; document.getElementById('generateBtn').textContent='Generate Signal'; }
+function copyAllSignals(){ const list=document.getElementById('signalList'); let text=''; list.querySelectorAll('.signal-card').forEach(div=>text+=div.textContent+'\n'); navigator.clipboard.writeText(text).then(()=>alert('Copied to clipboard!')); }
+function showNotice(msg){ const notice = document.getElementById('notice'); notice.innerHTML=msg+`<br>যোগাযোগ: <a href="https://t.me/TraderParvej" target="_blank">@TraderParvej</a>`; notice.classList.add('show'); setTimeout(()=>{ notice.classList.remove('show'); },15000); }
 </script>
 </body>
 </html>
