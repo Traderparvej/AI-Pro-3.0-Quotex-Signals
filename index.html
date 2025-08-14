@@ -183,7 +183,6 @@ const otcAssets=[
 let canGenerate = true;
 let signalEndTime = null;
 let consecutiveLosses = 0;
-let lossCooldownEnd = null;
 let waitingForResult = false;
 let profitCount = 0;
 let profitCooldownEnd = null;
@@ -212,31 +211,13 @@ function checkLogin(){
         alert('Password is incorrect!');
         return;
     }
-    const now = Date.now();
-    const lastLogin = localStorage.getItem('lastLoginTime');
-    if(lastLogin && now - parseInt(lastLogin) < 3*60*60*1000){
-        const notice = document.getElementById('notice');
-        notice.innerHTML=`আপনি একবার লগইন করেছেন। আবার লগইন করতে ৩ ঘন্টা পর চেষ্টা করুন।<br>যোগাযোগ: <a href="https://t.me/TraderParvej" target="_blank">@TraderParvej</a>`;
-        notice.classList.add('show');
-        setTimeout(()=>{ notice.classList.remove('show'); },15000);
-        return;
-    }
-    localStorage.setItem('lastLoginTime', now);
+    // No time restriction for Parvej4067
     document.getElementById('loginContainer').style.display='none';
     document.getElementById('tradingContainer').style.display='flex';
 }
 
 function generateSignals(){
-    const now = new Date();
     if(!canGenerate){ alert('Please wait or select previous signal result.'); return; }
-    if(lossCooldownEnd && now < lossCooldownEnd){
-        showNotice("মার্কেট এখন খারাপ! ৪ ঘন্টা পর আবার ট্রেড করতে পারবেন।");
-        return;
-    }
-    if(profitCooldownEnd && now < profitCooldownEnd){
-        showNotice("১০ টি সফল ট্রেড হয়েছে। ১০ ঘন্টা পর আবার ট্রেড করতে পারবেন।");
-        return;
-    }
 
     const asset = pairSelect.value;
     const randomGap = Math.floor(Math.random()*3)+1; // 1-3 min random
@@ -291,11 +272,6 @@ function registerWin(button){
     waitingForResult=false;
     canGenerate=true;
     clearSignalBox();
-    if(profitCount>=10){
-        profitCooldownEnd = new Date(Date.now()+10*60*60*1000);
-        showNotice("১০ টি সফল ট্রেড হয়েছে। ১০ ঘন্টা পর আবার ট্রেড করতে পারবেন।");
-        profitCount=0;
-    }
 }
 
 function registerLoss(button){
@@ -303,11 +279,6 @@ function registerLoss(button){
     waitingForResult=false;
     canGenerate=true;
     clearSignalBox();
-    if(consecutiveLosses>=2){
-        lossCooldownEnd=new Date(Date.now()+4*60*60*1000);
-        showNotice("মার্কেট এখন খারাপ! ৪ ঘন্টা পর আবার ট্রেড করতে পারবেন।");
-        consecutiveLosses=0;
-    }
 }
 
 function clearSignalBox(){
@@ -327,12 +298,6 @@ function copyAllSignals(){
     navigator.clipboard.writeText(text).then(()=>alert('Copied to clipboard!'));
 }
 
-function showNotice(msg){
-    const notice = document.getElementById('notice');
-    notice.innerHTML=msg+`<br>যোগাযোগ: <a href="https://t.me/TraderParvej" target="_blank">@TraderParvej</a>`;
-    notice.classList.add('show');
-    setTimeout(()=>{ notice.classList.remove('show'); },15000);
-}
 </script>
 </body>
 </html>
