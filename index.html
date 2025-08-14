@@ -61,8 +61,20 @@ body::before{content:'';position:fixed;top:0;left:0;width:200%;height:200%;backg
 .notice.show{display:block;opacity:1;}
 .notice a{color:#aa0000;text-decoration:underline;font-size:20px;display:block;margin-top:10px;}
 
-/* Bold & Colored Signal Title */
-.signal-title{font-weight:bold;color:#00aa00;font-size:16px;}
+/* Total Result Box */
+#totalResult{background: rgba(255,255,255,0.95);padding:15px;border-radius:15px;border:1px solid #00aa0033;margin-top:15px;font-family:'Courier New',monospace;white-space:pre-line;line-height:1.4;box-shadow:0 4px 12px rgba(0,170,0,0.1);}
+
+/* Custom Notices */
+.customNotice{
+    display:none;position:fixed;top:20%;left:50%;transform:translate(-50%,-50%);
+    padding:25px 30px;border-radius:15px;font-size:18px;font-weight:bold;text-align:center;z-index:9999;box-shadow:0 8px 25px rgba(0,0,0,0.3);color:#fff;
+    animation:fadeNotice 0.5s ease;
+}
+.customNotice.show{display:block;}
+.customNotice.red{background:#e74c3c;}
+.customNotice.green{background:#2ecc71;}
+.customNotice.darkgreen{background:#27ae60;}
+@keyframes fadeNotice{0%{opacity:0;transform:translate(-50%, -40%);}100%{opacity:1;transform:translate(-50%, -50%);}}
 
 @media(max-width:480px){
     #loginContainer{padding:20px 12px;}
@@ -150,9 +162,7 @@ for(let i=0;i<40;i++){
 
         <div class="option-card">
             <label for="pair">Select Pair</label>
-            <select id="pair">
-                <!-- Options populated dynamically -->
-            </select>
+            <select id="pair"></select>
         </div>
     </div>
 
@@ -164,41 +174,34 @@ for(let i=0;i<40;i++){
             <button onclick="copyAllSignals()">Copy All</button>
         </div>
     </div>
-</div>
 
-<div id="notice" class="notice">
-<a href="https://t.me/TraderParvej" target="_blank">@TraderParvej</a>
+    <div id="totalResult"></div>
+    <div id="customNotice" class="customNotice"></div>
 </div>
 
 <script>
 const passwords=['@Ai100','Parvej4067'];
-const realAssets=[
-"EUR/USD","GBP/USD","USD/JPY","USD/CHF","AUD/USD","USD/CAD","NZD/USD","EUR/GBP","EUR/JPY","GBP/JPY","AUD/JPY","GBP/AUD",
-"EUR/NZD","GBP/NZD","CAD/CHF","CAD/JPY","CHF/JPY","NZD/CAD","NZD/CHF","NZD/JPY","USD/COP","USD/BRL","USD/NGN","USD/PHP"
-];
-const otcAssets=[
-"USD/BDT (OTC)","USD/EGP (OTC)","USD/PKR (OTC)","USD/ARS (OTC)","USD/INR (OTC)","USD/BRL (OTC)","USD/MXN (OTC)","NZD/CAD (OTC)","EUR/NZD (OTC)","GBP/NZD (OTC)"
-];
+const realAssets=["EUR/USD","GBP/USD","USD/JPY","USD/CHF","AUD/USD","USD/CAD","NZD/USD","EUR/GBP","EUR/JPY","GBP/JPY","AUD/JPY","GBP/AUD","EUR/NZD","GBP/NZD","CAD/CHF","CAD/JPY","CHF/JPY","NZD/CAD","NZD/CHF","NZD/JPY","USD/COP","USD/BRL","USD/NGN","USD/PHP"];
+const otcAssets=["USD/BDT (OTC)","USD/EGP (OTC)","USD/PKR (OTC)","USD/ARS (OTC)","USD/INR (OTC)","USD/BRL (OTC)","USD/MXN (OTC)","NZD/CAD (OTC)","EUR/NZD (OTC)","GBP/NZD (OTC)"];
 
-let canGenerate = true;
-let signalEndTime = null;
-let consecutiveLosses = 0;
-let waitingForResult = false;
-let profitCount = 0;
-let profitCooldownEnd = null;
+let canGenerate=true;
+let signalEndTime=null;
+let profitCount=0;
+let consecutiveLosses=0;
+let consecutiveWins=0;
+let waitingForResult=false;
 
-const marketSelect = document.getElementById('market');
-const pairSelect = document.getElementById('pair');
-const timezoneSelect = document.getElementById('timezone');
+const marketSelect=document.getElementById('market');
+const pairSelect=document.getElementById('pair');
+const timezoneSelect=document.getElementById('timezone');
 
-function updatePairOptions() {
-    const marketType = marketSelect.value;
-    const assets = marketType==='real'?realAssets:otcAssets;
+function updatePairOptions(){
+    const assets=marketSelect.value==='real'?realAssets:otcAssets;
     pairSelect.innerHTML='';
     assets.forEach(a=>{
-        const opt = document.createElement('option');
-        opt.value = a;
-        opt.textContent = a;
+        const opt=document.createElement('option');
+        opt.value=a;
+        opt.textContent=a;
         pairSelect.appendChild(opt);
     });
 }
@@ -207,11 +210,7 @@ marketSelect.addEventListener('change', updatePairOptions);
 
 function checkLogin(){
     const input=document.getElementById('password').value;
-    if(!passwords.includes(input)){
-        alert('Password is incorrect!');
-        return;
-    }
-    // No time restriction for Parvej4067
+    if(!passwords.includes(input)){ alert('Password is incorrect!'); return; }
     document.getElementById('loginContainer').style.display='none';
     document.getElementById('tradingContainer').style.display='flex';
 }
@@ -220,84 +219,82 @@ function generateSignals(){
     if(!canGenerate){ alert('Please wait or select previous signal result.'); return; }
 
     const asset = pairSelect.value;
-    const randomGap = Math.floor(Math.random()*3)+1; // 1-3 min random
-    signalEndTime = new Date(Date.now() + randomGap*60000);
-
-    const tzOffset = parseInt(timezoneSelect.value);
-    const signalDate = new Date(Date.now() + randomGap*60000 + tzOffset*3600000);
-    const hours = signalDate.getUTCHours().toString().padStart(2,'0');
-    const minutes = signalDate.getUTCMinutes().toString().padStart(2,'0');
+    const randomGap=Math.floor(Math.random()*3)+1;
+    signalEndTime=new Date(Date.now()+randomGap*60000);
+    const tzOffset=parseInt(timezoneSelect.value);
+    const signalDate=new Date(Date.now()+randomGap*60000+tzOffset*3600000);
+    const hours=signalDate.getUTCHours().toString().padStart(2,'0');
+    const minutes=signalDate.getUTCMinutes().toString().padStart(2,'0');
 
     const card=document.createElement('div');
     card.className='signal-card';
     card.innerHTML=`
-<span class="signal-title">Quotex Real Time Signals – AI Pro 3.0</span>
-🧠 Opposite Candle Stage:
-আগের ক্যান্ডেল অনুযায়ী বিপরীতে ট্রেড ❤️
-
-╔════ ≪•◦ ❈ ◦•≫ ════╗
-${hours}:${minutes} – ${asset}
-╚════ ≪•◦ ❈ ◦•≫ ════╝
-
+<span class="signal-title">${hours}:${minutes} UTC – ${asset}</span>
 <div class="winloss-buttons">
 <button onclick="registerWin(this)">WIN</button>
 <button onclick="registerLoss(this)">LOSS</button>
-</div>
-
-☠️ AI Trading Rules ☠️
-🚫 Avoid Signals:
-➤Doji  ➤Market <80%  ➤Gap Up/Down  ➤1-Step MTG
-
-<a href="https://t.me/QxParvej" target="_blank">Join Community</a>
-    `;
+</div>`;
     document.getElementById('signalList').prepend(card);
-
     canGenerate=false;
     waitingForResult=true;
 
-    const interval = setInterval(()=>{
-        const remaining = Math.floor((signalEndTime-new Date())/1000);
-        const btn = document.getElementById('generateBtn');
+    const interval=setInterval(()=>{
+        const remaining=Math.floor((signalEndTime-new Date())/1000);
+        const btn=document.getElementById('generateBtn');
         if(remaining>0) btn.textContent=`Wait: ${Math.floor(remaining/60)}m ${remaining%60}s`;
-        else{
-            btn.textContent='Generate Signal';
-            clearInterval(interval);
-        }
+        else { btn.textContent='Generate Signal'; clearInterval(interval); }
     },1000);
 }
 
 function registerWin(button){
     profitCount++;
     consecutiveLosses=0;
+    consecutiveWins++;
     waitingForResult=false;
     canGenerate=true;
-    clearSignalBox();
+
+    const card = button.closest('.signal-card');
+    showResult(card,'WIN');
+    checkCustomNotice();
 }
 
 function registerLoss(button){
     consecutiveLosses++;
+    consecutiveWins=0;
     waitingForResult=false;
     canGenerate=true;
-    clearSignalBox();
+
+    const card = button.closest('.signal-card');
+    showResult(card,'LOSS');
+    checkCustomNotice();
 }
 
-function clearSignalBox(){
-    document.getElementById('signalList').innerHTML='';
-    canGenerate=true;
-    document.getElementById('generateBtn').textContent='Generate Signal';
+function showResult(card,result){
+    let resultSpan=card.querySelector('.result');
+    if(!resultSpan){
+        resultSpan=document.createElement('span');
+        resultSpan.className='result';
+        resultSpan.style.display='block';
+        resultSpan.style.marginTop='10px';
+        resultSpan.style.fontWeight='bold';
+        resultSpan.style.fontSize='15px';
+        card.appendChild(resultSpan);
+    }
+
+    const title=card.querySelector('.signal-title').textContent;
+    if(result==='WIN'){ resultSpan.textContent='✅ WIN'; resultSpan.style.color='#007700'; }
+    else { resultSpan.textContent='❌ LOSS'; resultSpan.style.color='#aa0000'; }
+
+    // Update total result
+    updateTotalResult(title,result);
+
+    // Disable buttons
+    card.querySelectorAll('.winloss-buttons button').forEach(b=>{b.disabled=true;b.style.opacity='0.6';});
 }
 
-function copyAllSignals(){
-    const list=document.getElementById('signalList');
-    let text='';
-    list.querySelectorAll('.signal-card').forEach(div=>{
-        const cloned = div.cloneNode(true);
-        cloned.querySelectorAll('button').forEach(b=>b.remove());
-        text+=cloned.textContent+'\n';
-    });
-    navigator.clipboard.writeText(text).then(()=>alert('Copied to clipboard!'));
-}
+function updateTotalResult(title,result){
+    const total=document.getElementById('totalResult');
+    const symbol=result==='WIN'?'✅':'❌';
+    const line=`  ${title} ${symbol}\n`;
 
-</script>
-</body>
-</html>
+    if(!total
