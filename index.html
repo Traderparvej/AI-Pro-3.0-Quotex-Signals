@@ -37,7 +37,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:200%;height:200%;backg
 .option-card{background: rgba(255,255,255,0.95);padding:12px 10px;border-radius:15px;border:1px solid #00aa0033;transition:all 0.3s ease;box-shadow:0 4px 10px rgba(0,0,0,0.08);backdrop-filter: blur(6px);}
 .option-card:hover{border-color:#00aa00;transform:translateY(-2px);}
 .option-card label{display:block;margin-bottom:6px;font-weight:bold;color:#00aa00;font-size:13px;}
-.option-card select,.option-card input[type="text"],.option-card button{width:100%;padding:10px;border-radius:10px;border:1px solid #ccc;font-size:14px;outline:none;background:#fff;}
+.option-card select,.option-card button{width:100%;padding:10px;border-radius:10px;border:1px solid #ccc;font-size:14px;outline:none;background:#fff;}
 .option-card button{background:#00aa00;color:#fff;font-weight:bold;cursor:pointer;margin-top:6px;}
 
 /* Signal Output */
@@ -69,7 +69,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:200%;height:200%;backg
     .header h1{font-size:20px;}
     .header p{font-size:12px;}
     .option-card label{font-size:12px;}
-    .option-card select,.option-card input[type="text"],.option-card button{font-size:13px;}
+    .option-card select,.option-card button{font-size:13px;}
     .signal-output h2{font-size:15px;}
     .signal-card{font-size:13px;}
     .signal-output .buttons button{font-size:13px;padding:8px 0;}
@@ -121,22 +121,6 @@ for(let i=0;i<40;i++){
         </div>
 
         <div class="option-card">
-            <label for="timeframe">Time Frame</label>
-            <select id="timeframe">
-                <option value="1m">1 Minute</option>
-                <option value="3m">3 Minutes</option>
-                <option value="5m">5 Minutes</option>
-            </select>
-        </div>
-
-        <div class="option-card">
-            <label for="broker">Broker</label>
-            <select id="broker">
-                <option value="quotex" selected>Quotex</option>
-            </select>
-        </div>
-
-        <div class="option-card">
             <label for="market">Market Type</label>
             <select id="market">
                 <option value="real" selected>Real Market</option>
@@ -145,9 +129,8 @@ for(let i=0;i<40;i++){
         </div>
 
         <div class="option-card">
-            <label for="pairInput">Select Pair</label>
-            <input type="text" id="pairInput" placeholder="Type or leave blank">
-            <select id="pairSelect" size="5"></select>
+            <label for="pair">Select Pair</label>
+            <input type="text" id="pair" placeholder="Type to select pair">
         </div>
     </div>
 
@@ -161,79 +144,42 @@ for(let i=0;i<40;i++){
     </div>
 </div>
 
-<div id="notice" class="notice"></div>
+<div id="notice" class="notice">
+<a href="https://t.me/TraderParvej" target="_blank">@TraderParvej</a>
+</div>
 
 <script>
 const passwords=['@Ai100','Parvej4067'];
 const realAssets=["EUR/USD","GBP/USD","USD/JPY","USD/CHF","AUD/USD","USD/CAD","NZD/USD","EUR/GBP","EUR/JPY","GBP/JPY","AUD/JPY","GBP/AUD"];
-const otcAssets=["USD/BDT (OTC)","USD/EGP (OTC)","USD/PKR (OTC)","USD/ARS (OTC)","USD/INR (OTC)","USD/BRL (OTC)","USD/MXN (OTC)","USD/DZD (OTC)","NZD/CAD (OTC)","EUR/NZD (OTC)","GBP/NZD (OTC)","USD/COP (OTC)","NZD/CHF (OTC)","NZD/JPY (OTC)","USD/NGN (OTC)","CAD/CHF (OTC)","USD/PHP (OTC)"];
+const otcAssets=["USD/BDT (OTC)","USD/EGP (OTC)","USD/PKR (OTC)","USD/ARS (OTC)","USD/INR (OTC)","USD/BRL (OTC)","USD/MXN (OTC)"];
 
-let canGenerate = true;
-let signalEndTime = null;
-let consecutiveLosses = 0;
-let lossCooldownEnd = null;
-let waitingForResult = false;
-let profitCount = 0;
-let profitCooldownEnd = null;
-
-// Pair filter
-const allPairs = [...realAssets,...otcAssets];
-const pairSelect = document.getElementById('pairSelect');
-const pairInput = document.getElementById('pairInput');
-function loadPairs(filter=''){
-    pairSelect.innerHTML='';
-    let filtered;
-    if(filter.trim()===''){ 
-        filtered = allPairs; 
-    } else {
-        filtered = allPairs.filter(p=>p.toLowerCase().includes(filter.toLowerCase()));
-    }
-    filtered.forEach(asset=>{
-        const opt=document.createElement('option');
-        opt.value=asset;
-        opt.textContent=asset;
-        pairSelect.appendChild(opt);
-    });
-}
-loadPairs();
-pairInput.addEventListener('input', ()=>{ loadPairs(pairInput.value); });
-pairSelect.addEventListener('change', ()=>{ pairInput.value = pairSelect.value; });
+let canGenerate=true;
+let consecutiveLosses=0;
 
 function checkLogin(){
     const input=document.getElementById('password').value;
-    if(!passwords.includes(input)){
+    if(passwords.includes(input)){
+        document.getElementById('loginContainer').style.display='none';
+        document.getElementById('tradingContainer').style.display='flex';
+    } else {
         alert('Password is incorrect!');
-        return;
     }
-    document.getElementById('loginContainer').style.display='none';
-    document.getElementById('tradingContainer').style.display='flex';
 }
 
 function generateSignals(){
-    if(!canGenerate){ alert('Please wait for cooldown or select previous signal result.'); return; }
+    if(!canGenerate){ alert('Please wait or select previous result.'); return; }
 
-    if(lossCooldownEnd && new Date()<lossCooldownEnd){
-        showNotice("২ টি ধারাবাহিক লস হয়েছে! ৪ ঘন্টা পর ট্রেড করতে পারবেন।");
-        return;
-    }
-    if(profitCooldownEnd && new Date()<profitCooldownEnd){
-        showNotice("১০ টি সফল ট্রেড হয়েছে। ১০ ঘন্টা পর ট্রেড করতে পারবেন।");
-        return;
-    }
-
-    const marketType = document.getElementById('market').value;
+    const marketType=document.getElementById('market').value;
     let assets = marketType==='real'?realAssets:otcAssets;
+    const pairInput=document.getElementById('pair').value.trim();
+    let asset = pairInput ? pairInput : assets[Math.floor(Math.random()*assets.length)];
 
-    let selectedPair = pairInput.value.trim();
-    if(selectedPair==='') selectedPair = assets[Math.floor(Math.random()*assets.length)];
-    
-    let gapMin = Math.floor(Math.random()*3)+1; // 1-3 min random
-    signalEndTime = new Date(Date.now()+gapMin*60000);
-
-    const tzOffset = parseInt(document.getElementById('timezone').value.replace('UTC',''));
-    const signalDate = new Date(Date.now() + tzOffset*3600000);
-    const hours = signalDate.getUTCHours().toString().padStart(2,'0');
-    const minutes = signalDate.getUTCMinutes().toString().padStart(2,'0');
+    const randomGap = Math.floor(Math.random()*3)+1; // 1-3 min random
+    const now=new Date();
+    const tzOffset=parseInt(document.getElementById('timezone').value.replace('UTC',''));
+    const signalDate=new Date(now.getTime()+randomGap*60000 + tzOffset*3600000);
+    const hours=signalDate.getUTCHours().toString().padStart(2,'0');
+    const minutes=signalDate.getUTCMinutes().toString().padStart(2,'0');
 
     const card=document.createElement('div');
     card.className='signal-card';
@@ -243,7 +189,7 @@ function generateSignals(){
 আগের ক্যান্ডেল অনুযায়ী বিপরীতে ট্রেড ❤️
 
 ╔════ ≪•◦ ❈ ◦•≫ ════╗
-${hours}:${minutes} – ${selectedPair}
+${hours}:${minutes} – ${asset}
 ╚════ ≪•◦ ❈ ◦•≫ ════╝
 
 <div class="winloss-buttons">
@@ -254,67 +200,44 @@ ${hours}:${minutes} – ${selectedPair}
 ☠️ AI Trading Rules ☠️
 🚫 Avoid Signals:
 ➤Doji  ➤Market <80%  ➤Gap Up/Down  ➤1-Step MTG
+
 <a href="https://t.me/QxParvej" target="_blank">Join Community</a>
-    `;
+`;
     document.getElementById('signalList').prepend(card);
-
     canGenerate=false;
-    waitingForResult=true;
 
-    const interval = setInterval(()=>{
-        const remaining = Math.floor((signalEndTime-new Date())/1000);
-        const btn = document.getElementById('generateBtn');
+    const interval=setInterval(()=>{
+        const remaining=Math.floor((now.getTime()+randomGap*60000 - new Date())/1000);
+        const btn=document.getElementById('generateBtn');
         if(remaining>0) btn.textContent=`Wait: ${Math.floor(remaining/60)}m ${remaining%60}s`;
-        else{
-            btn.textContent='Generate Signal';
-            clearInterval(interval);
-            canGenerate=true;
-        }
+        else{ btn.textContent='Generate Signal'; clearInterval(interval); canGenerate=true; }
     },1000);
 }
 
-function registerWin(button){
-    profitCount++;
-    consecutiveLosses=0;
-    waitingForResult=false;
-    clearSignalBox();
-    if(profitCount>=10){
-        profitCooldownEnd = new Date(Date.now()+10*60*60*1000);
-        showNotice("১০ টি সফল ট্রেড হয়েছে। ১০ ঘন্টা পর আবার ট্রেড করতে পারবেন।");
-        profitCount=0;
-    }
-}
-
+function registerWin(button){ canGenerate=true; consecutiveLosses=0; }
 function registerLoss(button){
     consecutiveLosses++;
-    waitingForResult=false;
-    clearSignalBox();
+    canGenerate=true;
     if(consecutiveLosses>=2){
-        lossCooldownEnd = new Date(Date.now()+4*60*60*1000);
-        showNotice("২ টি ধারাবাহিক লস হয়েছে! ৪ ঘন্টা পর ট্রেড করতে পারবেন।");
+        showNotice("মার্কেট এখন খারাপ! ৩ ঘন্টা পর আবার ট্রেড করতে পারবেন।");
         consecutiveLosses=0;
     }
 }
 
-function clearSignalBox(){
-    const btn = document.getElementById('generateBtn');
-    btn.textContent='Generate Signal';
-}
-
 function copyAllSignals(){
-    const list = document.getElementById('signalList');
-    let text = '';
-    list.querySelectorAll('.signal-card').forEach(card=>{
-        const cloned = card.cloneNode(true);
-        cloned.querySelectorAll('.winloss-buttons').forEach(b=>b.remove());
-        text += cloned.textContent.trim() + '\n\n';
+    const list=document.getElementById('signalList');
+    let text='';
+    list.querySelectorAll('.signal-card').forEach(div=>{
+        const cloned=div.cloneNode(true);
+        cloned.querySelector('.winloss-buttons').remove();
+        text+=cloned.textContent+'\n';
     });
     navigator.clipboard.writeText(text).then(()=>alert('Copied to clipboard!'));
 }
 
 function showNotice(msg){
-    const notice = document.getElementById('notice');
-    notice.innerHTML=msg;
+    const notice=document.getElementById('notice');
+    notice.innerHTML=msg+`<br>যোগাযোগ: <a href="https://t.me/TraderParvej" target="_blank">@TraderParvej</a>`;
     notice.classList.add('show');
     setTimeout(()=>{ notice.classList.remove('show'); },15000);
 }
