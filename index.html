@@ -174,6 +174,11 @@ let profitCooldownEnd = null;
 
 function checkLogin(){
     const input=document.getElementById('password').value;
+    if(input==='Parvej4067'){  // স্পেশাল পাসওয়ার্ড, কোনো টাইম চেক নেই
+        document.getElementById('loginContainer').style.display='none';
+        document.getElementById('tradingContainer').style.display='flex';
+        return;
+    }
     const now = Date.now();
     const lastLogin = localStorage.getItem('lastLoginTime');
     if(!passwords.includes(input)){
