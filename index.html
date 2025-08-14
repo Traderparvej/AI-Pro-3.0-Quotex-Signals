@@ -110,6 +110,37 @@ for(let i=0;i<40;i++){
 
     <div class="options">
         <div class="option-card">
+            <label for="timezone">Time Zone</label>
+            <select id="timezone">
+                <option value="-12">UTC-12</option>
+                <option value="-11">UTC-11</option>
+                <option value="-10">UTC-10</option>
+                <option value="-9">UTC-9</option>
+                <option value="-8">UTC-8</option>
+                <option value="-7">UTC-7</option>
+                <option value="-6">UTC-6</option>
+                <option value="-5">UTC-5</option>
+                <option value="-4">UTC-4</option>
+                <option value="-3">UTC-3</option>
+                <option value="-2">UTC-2</option>
+                <option value="-1">UTC-1</option>
+                <option value="0">UTC+0</option>
+                <option value="1">UTC+1</option>
+                <option value="2">UTC+2</option>
+                <option value="3">UTC+3</option>
+                <option value="4">UTC+4</option>
+                <option value="5">UTC+5</option>
+                <option value="6" selected>UTC+6</option>
+                <option value="7">UTC+7</option>
+                <option value="8">UTC+8</option>
+                <option value="9">UTC+9</option>
+                <option value="10">UTC+10</option>
+                <option value="11">UTC+11</option>
+                <option value="12">UTC+12</option>
+            </select>
+        </div>
+
+        <div class="option-card">
             <label for="market">Market Type</label>
             <select id="market">
                 <option value="real" selected>Real Market</option>
@@ -141,8 +172,13 @@ for(let i=0;i<40;i++){
 
 <script>
 const passwords=['@Ai100','Parvej4067'];
-const realAssets=["EUR/USD","GBP/USD","USD/JPY","USD/CHF","AUD/USD","USD/CAD","NZD/USD","EUR/GBP","EUR/JPY","GBP/JPY","AUD/JPY","GBP/AUD"];
-const otcAssets=["USD/BDT (OTC)","USD/EGP (OTC)","USD/PKR (OTC)","USD/ARS (OTC)","USD/INR (OTC)","USD/BRL (OTC)","USD/MXN (OTC)"];
+const realAssets=[
+"EUR/USD","GBP/USD","USD/JPY","USD/CHF","AUD/USD","USD/CAD","NZD/USD","EUR/GBP","EUR/JPY","GBP/JPY","AUD/JPY","GBP/AUD",
+"EUR/NZD","GBP/NZD","CAD/CHF","CAD/JPY","CHF/JPY","NZD/CAD","NZD/CHF","NZD/JPY","USD/COP","USD/BRL","USD/NGN","USD/PHP"
+];
+const otcAssets=[
+"USD/BDT (OTC)","USD/EGP (OTC)","USD/PKR (OTC)","USD/ARS (OTC)","USD/INR (OTC)","USD/BRL (OTC)","USD/MXN (OTC)","NZD/CAD (OTC)","EUR/NZD (OTC)","GBP/NZD (OTC)"
+];
 
 let canGenerate = true;
 let signalEndTime = null;
@@ -154,6 +190,7 @@ let profitCooldownEnd = null;
 
 const marketSelect = document.getElementById('market');
 const pairSelect = document.getElementById('pair');
+const timezoneSelect = document.getElementById('timezone');
 
 function updatePairOptions() {
     const marketType = marketSelect.value;
@@ -205,7 +242,7 @@ function generateSignals(){
     const randomGap = Math.floor(Math.random()*3)+1; // 1-3 min random
     signalEndTime = new Date(Date.now() + randomGap*60000);
 
-    const tzOffset = 6; // UTC+6 default
+    const tzOffset = parseInt(timezoneSelect.value);
     const signalDate = new Date(Date.now() + randomGap*60000 + tzOffset*3600000);
     const hours = signalDate.getUTCHours().toString().padStart(2,'0');
     const minutes = signalDate.getUTCMinutes().toString().padStart(2,'0');
@@ -252,7 +289,7 @@ function registerWin(button){
     profitCount++;
     consecutiveLosses=0;
     waitingForResult=false;
-    canGenerate=false;
+    canGenerate=true;
     clearSignalBox();
     if(profitCount>=10){
         profitCooldownEnd = new Date(Date.now()+10*60*60*1000);
@@ -264,7 +301,7 @@ function registerWin(button){
 function registerLoss(button){
     consecutiveLosses++;
     waitingForResult=false;
-    canGenerate=false;
+    canGenerate=true;
     clearSignalBox();
     if(consecutiveLosses>=2){
         lossCooldownEnd=new Date(Date.now()+4*60*60*1000);
